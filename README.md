@@ -12,6 +12,8 @@ Use [this Python script](https://gist.github.com/Vic3198/f0c9e17ef3d70e7b8c066bf
 
 Tested on v0.7.2 of signal-cli.
 
+[View Documentation](https://tapucosmo.github.io/signal-bot/)
+
 ## Example Usage
 
 ### Basic Commands
