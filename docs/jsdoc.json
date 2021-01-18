@@ -1,0 +1,38 @@
+{
+  "opts": {
+    "recurse": true,
+    "encoding": "utf8",
+    "template": "node_modules/docdash",
+    "destination": "./docs/out/"
+  },
+  "plugins": [
+    "plugins/markdown"
+  ],
+  "templates": {
+    "default": {
+      "cleverLinks": true,
+      "includeDate": false
+    },
+    "docdash": {
+      "typedefs": true,
+      "openGraph": {
+        "title": "signal-bot Documentation",
+        "type": "website",
+        "site_name": "signal-bot",
+        "url": ""
+      },
+      "meta": {
+        "title": "signal-bot Documentation",
+        "description": "A library for creating bots that interact with the Signal application. Not affiliated with the Signal project or Open Whisper Systems.",
+        "keyword": "signal bot client"
+      }
+    }
+  },
+  "source": {
+    "include": [
+      "./src/",
+      "./README.md"
+    ],
+    "includePattern": ".+\\.js$"
+  }
+}
