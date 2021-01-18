@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>client/Client.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BaseConversation.html">BaseConversation</a></li><li><a href="BaseManager.html">BaseManager</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#connect">connect</a></li></ul></li><li><a href="ClientUser.html">ClientUser</a><ul class='methods'><li data-type='method'><a href="ClientUser.html#getRegistrationStatus">getRegistrationStatus</a></li></ul></li><li><a href="ConversationManager.html">ConversationManager</a><ul class='methods'><li data-type='method'><a href="ConversationManager.html#fetchConversation">fetchConversation</a></li><li data-type='method'><a href="ConversationManager.html#fetchGroupConversations">fetchGroupConversations</a></li><li data-type='method'><a href="ConversationManager.html#from">from</a></li></ul></li><li><a href="ExtMap.html">ExtMap</a><ul class='methods'><li data-type='method'><a href="ExtMap.html#array">array</a></li><li data-type='method'><a href="ExtMap.html#filter">filter</a></li><li data-type='method'><a href="ExtMap.html#find">find</a></li></ul></li><li><a href="GroupConversation.html">GroupConversation</a><ul class='methods'><li data-type='method'><a href="GroupConversation.html#acceptInvitation">acceptInvitation</a></li><li data-type='method'><a href="GroupConversation.html#sendMessage">sendMessage</a></li></ul></li><li><a href="Message.html">Message</a></li><li><a href="UserConversation.html">UserConversation</a><ul class='methods'><li data-type='method'><a href="UserConversation.html#resetSession">resetSession</a></li><li data-type='method'><a href="UserConversation.html#sendMessage">sendMessage</a></li></ul></li></ul><h3>Events</h3><ul><li><a href="Client.html#event:disconnect">disconnect</a></li><li><a href="Client.html#event:error">error</a></li><li><a href="Client.html#event:message">message</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">client/Client.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+
+const EventEmitter = require("events");
+
+const dbus = require("dbus-next");
+
+const {defaultClientSettings} = require("../constants");
+const {debugLog, deepMerge} = require("../util");
+const ClientUser = require("./ClientUser.js");
+const ConversationManager = require("../managers/ConversationManager.js");
+const Message = require("../structures/Message.js");
+
+/**
+ * Signal bot client class.
+ * @extends EventEmitter
+ */
+class Client extends EventEmitter {
+  /**
+   * Construct a Client.
+   * @param {Object} [settings] - The settings for the Client.
+   * @param {Object} [settings.dbus] - D-Bus settings.
+   * @param {number} [settings.dbus.connectionCheckInterval=5000] - How frequently the connection should be checked, in milliseconds.
+   * @param {string} [settings.dbus.destination=org.asamk.Signal] - D-Bus destination for signal-cli daemon.
+   * @param {string} [settings.dbus.type=system] - D-Bus type. Can be `system` or `session`.
+   */
+  constructor(settings = {}) {
+    super();
+    this.settings = deepMerge(settings, defaultClientSettings);
+    if (typeof this.settings.dbus?.connectionCheckInterval !== "number") {
+      throw new TypeError(`Bad Client settings.dbus.connectionCheckInterval: ${this.settings.dbus?.connectionCheckInterval}`);
+    }
+    if (typeof this.settings.dbus?.destination !== "string") {
+      throw new TypeError(`Bad Client settings.dbus.destination: ${this.settings.dbus?.destination}`);
+    }
+    if (!["system", "session"].includes(this.settings.dbus?.type)) {
+      throw new TypeError(`Bad Client settings.dbus.destination: ${this.settings.dbus?.destination}`);
+    }
+    this.user = new ClientUser({
+      client: this
+    });
+    this.conversations = new ConversationManager(this);
+  }
+
+  /**
+   * Connect to the signal-cli daemon over D-Bus.
+   * @return {Promise&lt;undefined>}
+   */
+  async connect() {
+    if (this.settings.dbus.type === "session") {
+      this._bus = dbus.sessionBus();
+    } else {
+      this._bus = dbus.systemBus();
+    }
+    const interfaces = await this._bus.getProxyObject(
+      this.settings.dbus.destination,
+      "/org/asamk/Signal"
+    );
+    this._busInterface = interfaces.getInterface("org.asamk.Signal");
+
+    /**
+     * Disconnect event.
+     * Fires when the D-Bus connection is disconnected.
+     * The `connect` method must be called again afterwards in order to reconnect.
+     * @event Client#disconnect
+     */
+    // Hacky way of testing connection since dbus-next does not emit an event on disconnect.
+    this._connectionCheckInterval = setInterval(async () => {
+      try {
+        await this.user.getRegistrationStatus();
+      } catch (e) {
+        if (this.settings.debug) {
+          debugLog("Disconnect");
+        }
+        clearInterval(this._connectionCheckInterval);
+        this._bus.disconnect();
+        this._busInterface.removeAllListeners();
+        this.emit("disconnect");
+      }
+    }, this.settings.dbus.connectionCheckInterval);
+
+    /**
+     * Error event.
+     * Fires when an error occurs.
+     * @event Client#error
+     * @type {Error}
+     */
+    this._busInterface.on("error", e => {
+      if (this.settings.debug) {
+        debugLog(`Error: ${e}`);
+      }
+      this.emit("error", e);
+    });
+
+    /**
+     * Message event.
+     * Fires when a message is received.
+     * @event Client#message
+     * @type {Message}
+     */
+    this._busInterface.on("MessageReceived", (timestamp, authorID, groupID, content, attachments) => {
+      if (this.settings.debug) {
+        debugLog(`MessageReceived: ${timestamp}, ${authorID}, ${groupID?.toString?.("base64")}, ${content}, ${JSON.stringify(attachments)}`);
+      }
+      const conversationID = groupID.length ? groupID.toString("base64") : authorID;
+      let conversation = this.conversations.cache.get(conversationID);
+      if (!conversation) {
+        conversation = this.conversations.from(conversationID);
+        this.conversations._addToCache(conversation);
+      }
+      const message = new Message({
+        client: this,
+        // D-Bus lib returns BigInt, which is unnecessary and not compatible with Date()
+        timestamp: Number(timestamp),
+        authorID,
+        conversation,
+        attachments,
+        content
+      });
+
+      this.emit("message", message);
+    });
+
+    // Hacky workaround for dbus-next not handling multiple input signatures well.
+    this._busInterface.$methods
+      .filter(method => method.name === "sendMessage")
+      .forEach(method => (method.inSignature = "sasas"));
+  }
+}
+
+module.exports = Client;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.6</a> using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

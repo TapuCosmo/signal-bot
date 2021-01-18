@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>managers/ConversationManager.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BaseConversation.html">BaseConversation</a></li><li><a href="BaseManager.html">BaseManager</a></li><li><a href="Client.html">Client</a><ul class='methods'><li data-type='method'><a href="Client.html#connect">connect</a></li></ul></li><li><a href="ClientUser.html">ClientUser</a><ul class='methods'><li data-type='method'><a href="ClientUser.html#getRegistrationStatus">getRegistrationStatus</a></li></ul></li><li><a href="ConversationManager.html">ConversationManager</a><ul class='methods'><li data-type='method'><a href="ConversationManager.html#fetchConversation">fetchConversation</a></li><li data-type='method'><a href="ConversationManager.html#fetchGroupConversations">fetchGroupConversations</a></li><li data-type='method'><a href="ConversationManager.html#from">from</a></li></ul></li><li><a href="ExtMap.html">ExtMap</a><ul class='methods'><li data-type='method'><a href="ExtMap.html#array">array</a></li><li data-type='method'><a href="ExtMap.html#filter">filter</a></li><li data-type='method'><a href="ExtMap.html#find">find</a></li></ul></li><li><a href="GroupConversation.html">GroupConversation</a><ul class='methods'><li data-type='method'><a href="GroupConversation.html#acceptInvitation">acceptInvitation</a></li><li data-type='method'><a href="GroupConversation.html#sendMessage">sendMessage</a></li></ul></li><li><a href="Message.html">Message</a></li><li><a href="UserConversation.html">UserConversation</a><ul class='methods'><li data-type='method'><a href="UserConversation.html#resetSession">resetSession</a></li><li data-type='method'><a href="UserConversation.html#sendMessage">sendMessage</a></li></ul></li></ul><h3>Events</h3><ul><li><a href="Client.html#event:disconnect">disconnect</a></li><li><a href="Client.html#event:error">error</a></li><li><a href="Client.html#event:message">message</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">managers/ConversationManager.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+
+const BaseManager = require("./BaseManager.js");
+const GroupConversation = require("../structures/GroupConversation.js");
+const UserConversation = require("../structures/UserConversation.js");
+
+/**
+ * ConversationManager class.
+ * @extends BaseManager
+ */
+class ConversationManager extends BaseManager {
+  /**
+   * The cache belonging to this ConversationManager.
+   * Keys are conversation IDs.
+   * @type {ExtMap&lt;string, (UserConversation|GroupConversation)>}
+   * @name ConversationManager#cache
+   */
+
+  /**
+   * Adds a conversation to the cache.
+   * @param {(UserConversation|GroupConversation)} conversation
+   * @private
+   */
+  _addToCache(conversation) {
+    this.cache.set(conversation.id, conversation);
+  }
+
+  /**
+   * Converts a conversation ID to a Conversation.
+   * No checks are done to see if the ID is actually valid or available.
+   * @param {string} id - The conversation ID.
+   * @return {(UserConversation|GroupConversation)}
+   */
+  from(id) {
+    if (ConversationManager._idToConversationType(id) === "group") {
+      return new GroupConversation({
+        client: this.client,
+        id: id
+      });
+    }
+    return new UserConversation({
+      client: this.client,
+      id: id
+    });
+  }
+
+  /**
+   * Fetches a conversation.
+   * Currently cannot fetch uncached UserConversation.
+   * @param {string} id - The conversation ID.
+   * @retrun {Promise&lt;(UserConversation|GroupConversation|null)>}
+   */
+  async fetchConversation(id) {
+    const cached = this.cache.get(id);
+    if (cached) return cached;
+    if (ConversationManager._idToConversationType(id) === "user") return null;
+    await this.fetchGroupConversations();
+    return this.cache.get(id) || null;
+  }
+
+  /**
+   * Fetches group conversations.
+   * Unfortunately signal-cli currently does not have a similar method
+   * for user conversations.
+   * @return {Promise&lt;ExtMap&lt;string, GroupConversation>>}
+   */
+  async fetchGroupConversations() {
+    const groupIDs = await this.client._busInterface.getGroupIds();
+    groupIDs.forEach(gid => {
+      // Convert from Buffer to base64
+      const base64ID = gid.toString("base64");
+      this.cache.set(
+        base64ID,
+        new GroupConversation({
+          client: this.client,
+          id: base64ID
+        })
+      );
+    });
+    return this.cache;
+  }
+
+  static _idToConversationType(id) {
+    // Encoded group IDs should be over 40 characters.
+    // Hopefully usernames will have a max limit of no more than 32.
+    return id.length > 32 ? "group" : "user";
+  }
+}
+
+module.exports = ConversationManager;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.6</a> using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>
