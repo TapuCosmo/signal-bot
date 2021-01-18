@@ -7,6 +7,7 @@ const UserConversation = require("../structures/UserConversation.js");
 /**
  * ConversationManager class.
  * @extends BaseManager
+ * @hideconstructor
  */
 class ConversationManager extends BaseManager {
   /**

@@ -35,10 +35,28 @@ class Client extends EventEmitter {
     if (!["system", "session"].includes(this.settings.dbus?.type)) {
       throw new TypeError(`Bad Client settings.dbus.destination: ${this.settings.dbus?.destination}`);
     }
-    this.user = new ClientUser({
+    this._user = new ClientUser({
       client: this
     });
-    this.conversations = new ConversationManager(this);
+    this._conversations = new ConversationManager(this);
+  }
+
+  /**
+   * The ClientUser belonging to this Client.
+   * @type {ClientUser}
+   * @readonly
+   */
+   get user() {
+     return this._user;
+   }
+
+  /**
+   * The ConversationManager belonging to this Client.
+   * @type {ConversationManager}
+   * @readonly
+   */
+  get conversations() {
+    return this._conversations;
   }
 
   /**

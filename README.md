@@ -8,7 +8,7 @@ Currently only works on Linux, with Node.js >=14.0.0.
 
 This library requires a working installation of [signal-cli](https://github.com/AsamK/signal-cli)
 running in daemon mode with the phone number you want to use.
-Use [this Python script](https://gist.github.com/Vic3198/f0c9e17ef3d70e7b8c066bfd8cf4db2d) for an easy installation process
+Use [this Python script](https://gist.github.com/Vic3198/f0c9e17ef3d70e7b8c066bfd8cf4db2d) for an easy installation process.
 
 Tested on v0.7.2 of signal-cli.
 
