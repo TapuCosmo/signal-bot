@@ -35,6 +35,12 @@ class Client extends EventEmitter {
     if (!["system", "session"].includes(this.settings.dbus?.type)) {
       throw new TypeError(`Bad Client settings.dbus.destination: ${this.settings.dbus?.destination}`);
     }
+    if(this.settings.phoneNumber == null){
+      throw new TypeError(`Bad client-phone-number: ${this.settings.phoneNumber}, required for signal-cli 0.8.4+`);
+    }
+    if(typeof this.settings.phoneNumber !== "number"){
+      throw new TypeError(`Bad client-phone-number: needs to be only the number (without + at the beginning)`);
+    }
     this._user = new ClientUser({
       client: this
     });
@@ -71,7 +77,7 @@ class Client extends EventEmitter {
     }
     const interfaces = await this._bus.getProxyObject(
       this.settings.dbus.destination,
-      "/org/asamk/Signal"
+      `/org/asamk/Signal_${this.settings.phoneNumber}`
     );
     this._busInterface = interfaces.getInterface("org.asamk.Signal");
 
