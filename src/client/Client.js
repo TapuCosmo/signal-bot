@@ -39,7 +39,7 @@ class Client extends EventEmitter {
       throw new TypeError(`Bad client-phone-number: ${this.settings.phoneNumber}, required for signal-cli 0.8.4+`);
     }
     if(typeof this.settings.phoneNumber === "string" && this.settings.phoneNumber.startsWith("+")){
-      throw new TypeError(`Bad client-phone-number: without + at the beginning`);
+      throw new TypeError(`Bad client-phone-number: remove + at the beginning`);
     }
     this._user = new ClientUser({
       client: this
