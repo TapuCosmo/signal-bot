@@ -77,7 +77,7 @@ class Client extends EventEmitter {
     }
     const interfaces = await this._bus.getProxyObject(
       this.settings.dbus.destination,
-      `/org/asamk/Signal_${this.settings.phoneNumber}`
+      `/org/asamk/Signal/_${this.settings.phoneNumber}`
     );
     this._busInterface = interfaces.getInterface("org.asamk.Signal");
 
