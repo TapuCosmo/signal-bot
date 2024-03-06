@@ -4,7 +4,8 @@ module.exports = {
   dbus: {
     connectionCheckInterval: 5000,
     destination: "org.asamk.Signal",
-    type: "system"
+    type: "system",
+    accountMode: "single",
   },
-  debug: false
+  debug: false,
 };

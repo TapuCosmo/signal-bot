@@ -1,28 +1,28 @@
 {
   "name": "signal-bot",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A library for creating bots that interact with the Signal application. Not affiliated with the Signal project or Open Whisper Systems.",
   "main": "./src/index.js",
   "scripts": {
     "docs:build": "jsdoc -c ./docs/jsdoc.json"
   },
-  "homepage": "https://github.com/TapuCosmo/signal-bot#readme",
+  "homepage": "https://github.com/Bentipa/signal-bot#readme",
   "bugs": {
-    "url": "https://github.com/TapuCosmo/signal-bot/issues"
+    "url": "https://github.com/Bentipa/signal-bot/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/TapuCosmo/signal-bot.git"
+    "url": "https://github.com/Bentipa/signal-bot.git"
   },
   "keywords": [
     "signal",
     "bot",
     "client"
   ],
-  "author": "Vietbao Tran (TapuCosmo)",
+  "author": "Benjamin Pabst (Bentipa) and Vietbao Tran (TapuCosmo)",
   "license": "MIT",
   "dependencies": {
-    "dbus-next": "^0.9.1"
+    "dbus-next": "^0.10.2"
   },
   "devDependencies": {
     "docdash": "^1.2.0",
